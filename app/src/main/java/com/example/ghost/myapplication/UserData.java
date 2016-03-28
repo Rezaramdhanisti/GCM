@@ -43,9 +43,6 @@ public class UserData {
     }
 
 
-
-
-    //constructor
     public UserData(int _id, String _imei, String _name, String _message) {
         this._id = _id;
         this._imei = _imei;
@@ -53,7 +50,6 @@ public class UserData {
         this._message = _message;
     }
 
-    //Empty constructor
 
     public UserData(){
 

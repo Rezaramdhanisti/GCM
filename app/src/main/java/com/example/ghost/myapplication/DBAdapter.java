@@ -22,7 +22,7 @@ public class DBAdapter extends SQLiteOpenHelper {
     public static final String LOG_TAG = "DBAdapter";
 
     public static final String KEY_ID = "_id";
-    public static final String KEY_ID_DEVICE = "_id_device";
+   // public static final String KEY_ID_DEVICE = "_id_device";
     public static final String KEY_USER_IMEI = "user_imei";
     public static final String KEY_USER_NAME = "user_name";
     public static final String KEY_USER_MESSAGE = "user_message";

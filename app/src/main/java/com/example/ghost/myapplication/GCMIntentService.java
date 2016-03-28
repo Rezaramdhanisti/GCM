@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -19,18 +20,15 @@ public class GCMIntentService extends GCMBaseIntentService {
     DBAdapter DB =  new DBAdapter(this);
 	
     public GCMIntentService() {
-    	// Call extended class Constructor GCMBaseIntentService
+
         super(Config.GOOGLE_SENDER_ID);
     }
 
-    /**
-     * Method called on device registered
-     **/
+
     @Override
     protected void onRegistered(Context context, String registrationId) {
     	
-    	
-    	//Get Global Controller Class object (see application tag in AndroidManifest.xml)
+
     	if(aController == null)
            aController = (Controller) getApplicationContext();
     	
@@ -47,9 +45,7 @@ public class GCMIntentService extends GCMBaseIntentService {
         
     }
 
-    /**
-     * Method called on device unregistred
-     * */
+
     @Override
     protected void onUnregistered(Context context, String registrationId) {
     	if(aController == null)
@@ -60,9 +56,7 @@ public class GCMIntentService extends GCMBaseIntentService {
         aController.unregister(context, registrationId,MainActivity.imei);
     }
 
-    /**
-     * Method called on Receiving a new message from GCM server
-     * */
+
     @Override
     protected void onMessage(Context context, Intent intent) {
     	
@@ -87,21 +81,16 @@ public class GCMIntentService extends GCMBaseIntentService {
 			imei    = StringAll[1];
 			message = StringAll[2];
 		}
-		
-		 // Call broadcast defined on ShowMessage.java to show message on ShowMessage.java screen
+
          aController.displayMessageOnScreen(context, title,message,imei);
-         
-         // Store new message data in sqlite database
+
          UserData userdata = new UserData(1,imei,title,message);
          DB.addUserData(userdata);
          
-        // generate notification to notify user
+
         generateNotification(context, title,message,imei);
     }
 
-    /**
-     * Method called on receiving a deleted message
-     * */
     @Override
     protected void onDeletedMessages(Context context, int total) {
     	
@@ -112,15 +101,10 @@ public class GCMIntentService extends GCMBaseIntentService {
         String message = getString(R.string.gcm_deleted, total);
         
         String title = "DELETED";
-        // aController.displayMessageOnScreen(context, message);
-        
-        // generate notification to notify user
+
         generateNotification(context,title, message,"");
     } 
 
-    /**
-     * Method called on Error
-     * */
     @Override
     public void onError(Context context, String errorId) {
     	
@@ -141,7 +125,7 @@ public class GCMIntentService extends GCMBaseIntentService {
     	
     	Log.i(TAG, "---------- onRecoverableError -------------");
     	
-        // log message
+
         Log.i(TAG, "Received recoverable error: " + errorId);
         aController.displayRegistrationMessageOnScreen(context, getString(R.string.gcm_recoverable_error,
                 errorId));
@@ -149,9 +133,7 @@ public class GCMIntentService extends GCMBaseIntentService {
     }
 
     
-    /**
-     * Create a notification to inform the user that server has sent a message.
-     */
+
     private static void generateNotification(Context context,String title, String message, String imei) {
         int icon = R.drawable.user_thumb;
         long when = System.currentTimeMillis();
@@ -174,15 +156,9 @@ public class GCMIntentService extends GCMBaseIntentService {
 
 
         notification.flags |= Notification.FLAG_AUTO_CANCEL;
-        
-        // Play default notification sound
-        notification.defaults |= Notification.DEFAULT_SOUND;
-        
-        //notification.sound = Uri.parse("android.resource://" + context.getPackageName() + "your_sound_file_name.mp3");
-        
-        // Vibrate if vibrate is enabled
+
         notification.defaults |= Notification.DEFAULT_VIBRATE;
-        notificationManager.notify(0, notification);   
+        notificationManager.notify(0, notification);
         
         
     }

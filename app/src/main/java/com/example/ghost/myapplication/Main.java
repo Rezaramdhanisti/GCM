@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
@@ -29,38 +30,33 @@ import android.widget.Toast;
 import com.example.ghost.myapplication.GridViewExample.LongOperation;
 import com.google.android.gcm.GCMRegistrar;
 
-public class Main extends Activity {
+public class Main extends AppCompatActivity {
 
-    // label to display gcm messages
+
 	TextView lblMessage;
 	Controller aController;
     DBAdapter DB = new DBAdapter(this);
+	String regId = "";
+
+
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) { 
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-		/******************* Intialize Database *************/
 
-		
-		// Get Global Controller Class object 
-		// (see application tag in AndroidManifest.xml)
 		aController = (Controller) getApplicationContext();
-		
-		
-		// Check if Internet present
 		if (!aController.isConnectingToInternet()) {
 			
-			// Internet Connection is not present
+
 			aController.showAlertDialog(Main.this,
 					"Internet Connection Error",
 					"Please connect to Internet connection", false);
-			// stop executing code by return
+
 			return;
 		}
 	
-		//Check device contains self information in sqlite database or not. 
+
 		int vDevice = 0;
 
             vDevice = DB.validateDevice();
@@ -69,7 +65,7 @@ public class Main extends Activity {
 		if(vDevice > 0)
 		{	
 			
-			// Launch Main Activity
+
 			Intent i = new Intent(getApplicationContext(), GridViewExample.class);
 			startActivity(i);
 			finish();
@@ -77,101 +73,91 @@ public class Main extends Activity {
 		else
 		{
 			String deviceIMEI = "";
+			regId = GCMRegistrar.getRegistrationId(this);
+
 			if(Config.SECOND_SIMULATOR){
 				
-				//Make it true in CONFIG if you want to open second simutor
-				// for testing actually we are using IMEI number to save a unique device
-				
+
 				deviceIMEI = "000000000000001";
 			}	
 			else
 			{
-			  // GET IMEI NUMBER      
+
 			 TelephonyManager tManager = (TelephonyManager) getBaseContext()
 			    .getSystemService(Context.TELEPHONY_SERVICE);
-			  deviceIMEI = tManager.getDeviceId(); 
+			  deviceIMEI = tManager.getDeviceId();
+
 			}
 			
-			/******* Validate device from server ******/
-			// WebServer Request URL
+
 	        String serverURL = Config.YOUR_SERVER_URL+"validate_device.php";
 	        
-	        // Use AsyncTask execute Method To Prevent ANR Problem
-	        LongOperation serverRequest = new LongOperation(); 
+	       	        LongOperation serverRequest = new LongOperation();
 	        
-	        serverRequest.execute(serverURL,deviceIMEI,"","");
+	        serverRequest.execute(serverURL,deviceIMEI,"regId","");
 			
 		}	
-		
-	}		
+
+	}
 	
 	
-	// Class with extends AsyncTask class
+
 	public class LongOperation  extends AsyncTask<String, Void, String> {
-	         
-	        // Required initialization
-	    	
+
 	       //private final HttpClient Client = new DefaultHttpClient();
 	       // private Controller aController = null;
 	        private String Error = null;
-	        private ProgressDialog Dialog = new ProgressDialog(Main.this); 
-	        String data =""; 
-	        int sizeData = 0;  
-	        
-	        
+	        private ProgressDialog Dialog = new ProgressDialog(Main.this);
+	        String data ="";
+	        int sizeData = 0;
+
+
 	        protected void onPreExecute() {
-	            // NOTE: You can call UI Element here.
-	             
-	            //Start Progress Dialog (Message)
-	           
+
 	            Dialog.setMessage("Validating Device..");
 	            Dialog.show();
-	            
+
 	        }
-	 
-	        // Call after onPreExecute method
+
+
 	        protected String doInBackground(String... params) {
-	        	
-	        	/************ Make Post Call To Web Server ***********/
+
+
 	        	BufferedReader reader=null;
 	        	String Content = "";
-		             // Send data 
+				//Content = Content.replaceFirst("<font>.*?</font>", "");
+
 		            try{
-		            	
-		            	// Defined URL  where to send data
+
+
 			               URL url = new URL(params[0]);
-		            	
-			            // Set Request parameter
-			            if(!params[1].equals(""))
+
+						if(!params[1].equals(""))
 		               	   data +="&" + URLEncoder.encode("data1", "UTF-8") + "="+params[1].toString();
 			            if(!params[2].equals(""))
-			               	   data +="&" + URLEncoder.encode("data2", "UTF-8") + "="+params[2].toString();	
+							data +="&" + URLEncoder.encode("data2") + "="+params[2].toString();
 			            if(!params[3].equals(""))
 			               	   data +="&" + URLEncoder.encode("data3", "UTF-8") + "="+params[3].toString();
 		              Log.i("GCM",data);
-			            
-			          // Send POST data request
-		   
-		              URLConnection conn = url.openConnection(); 
-		              conn.setDoOutput(true); 
-		              OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()); 
-		              wr.write( data ); 
-		              wr.flush(); 
-		          
-		              // Get the server response 
-		               
+
+
+		              URLConnection conn = url.openConnection();
+		              conn.setDoOutput(true);
+		              OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream());
+		              wr.write( data );
+		              wr.flush();
+
+
 		              reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 		              StringBuilder sb = new StringBuilder();
 		              String line = null;
-		            
-			            // Read Server Response
+
 			            while((line = reader.readLine()) != null)
 			                {
-			                       // Append server response in string
+
 			                       sb.append(line + "\n");
 			                }
-		                
-		                // Append Server Response To Content String 
+
 		               Content = sb.toString();
 		            }
 		            catch(Exception ex)
@@ -182,109 +168,97 @@ public class Main extends Activity {
 		            {
 		                try
 		                {
-		     
+
 		                    reader.close();
 		                }
-		   
+
 		                catch(Exception ex) {}
 		            }
-	        	
-	            /*****************************************************/
+
 	            return Content;
 	        }
-	         
-	        protected void onPostExecute(String Content) {
-	            // NOTE: You can call UI Element here.
-	             
-	            // Close progress dialog
-	            Dialog.dismiss();
-	            
-	            if (Error != null) {
-	                 
-	                 
-	            } else {
-	              
-	            	// Show Response Json On Screen (activity)
-	            	
-	             /****************** Start Parse Response JSON Data *************/
-	            	aController.clearUserData();
-	            	
-	            	JSONObject jsonResponse;
-	                      
-	                try {
-	                      
-	                     /****** Creates a new JSONObject with name/value mappings from the JSON string. ********/
-	                     jsonResponse = new JSONObject(Content);
-	                      
-	                     /***** Returns the value mapped by name if it exists and is a JSONArray. ***/
-	                     /*******  Returns null otherwise.  *******/
-	                     JSONArray jsonMainNode = jsonResponse.optJSONArray("Android");
-	                      
-	                     /*********** Process each JSON Node ************/
-	  
-	                     int lengthJsonArr = jsonMainNode.length();  
-	  
-	                     for(int i=0; i < lengthJsonArr; i++) 
-	                     {
-	                         /****** Get Object for each JSON node.***********/
-	                         JSONObject jsonChildNode = jsonMainNode.getJSONObject(i);
-	                          
-	                         /******* Fetch node values **********/
-	                         String Status       = jsonChildNode.optString("status").toString();
-	                         
-	                         Log.i("GCM","---"+Status);
-	                         
-	                         // IF server response status is update
-	                         if(Status.equals("update")){
-	                            
-	                        	String RegID      = jsonChildNode.optString("regid").toString();
-	                            String Name       = jsonChildNode.optString("name").toString();
-	                            String Email      = jsonChildNode.optString("email").toString();
-	                            String IMEI       = jsonChildNode.optString("imei").toString();
-	                            
-	                           // add device self data in sqlite database
 
-	                            DB.addDeviceData(Name, Email,RegID, IMEI);
-	                            
-	                            // Launch GridViewExample Activity
-	                			Intent i1 = new Intent(getApplicationContext(), GridViewExample.class);
-	                			startActivity(i1);
-	                			finish();
-	                           
-	                            Log.i("GCM","---"+Name);
-	                         }
-	                         else if(Status.equals("install")){  
-	                        	
-	                        	 // Launch RegisterActivity Activity
-		                		Intent i1 = new Intent(getApplicationContext(), RegisterActivity.class);
-		                		startActivity(i1);
-		                		finish();
-	                        	 
-	                         }
-	                         
-	                        
-	                    }
-	                     
-	                 /****************** End Parse Response JSON Data *************/     
-	                   
-	                      
+	        protected void onPostExecute(String Content) {
+
+	            Dialog.dismiss();
+
+				if (null == Content || Content.length() == 0) {
+					Toast.makeText(Main.this,"No data found from web!!!",Toast.LENGTH_SHORT).show();
+
+
+				} else {
+
+	            	aController.clearUserData();
+
+	            	JSONObject jsonResponse;
+
+	                try {
+
+
+	                     jsonResponse = new JSONObject(Content);
+
+
+	                     JSONArray jsonMainNode = jsonResponse.optJSONArray("Android");
+
+
+	                     int lengthJsonArr = jsonMainNode.length();
+
+						if(lengthJsonArr > 0) {
+
+							for (int i = 0; i < lengthJsonArr; i++) {
+
+								JSONObject jsonChildNode = jsonMainNode.getJSONObject(i);
+
+								String Status = jsonChildNode.optString("status").toString();
+
+								Log.i("GCM", "---" + Status);
+
+								if (Status.equals("update")) {
+
+									String RegID = jsonChildNode.optString("regid").toString();
+									String Name = jsonChildNode.optString("name").toString();
+									String Email = jsonChildNode.optString("email").toString();
+									String IMEI = jsonChildNode.optString("imei").toString();
+
+									DB.addDeviceData(Name, Email, RegID, IMEI);
+
+									Intent i1 = new Intent(getApplicationContext(), GridViewExample.class);
+									startActivity(i1);
+									finish();
+
+									Log.i("GCM", "---" + Name);
+								} else if (Status.equals("install")){
+
+									Intent i1 = new Intent(Main.this, RegisterActivity.class);
+									startActivity(i1);
+									finish();
+
+								}
+
+
+							}
+						}else{
+
+						}
+
+
 	                 } catch (JSONException e) {
-	          
+
 	                     e.printStackTrace();
 	                 }
-	  
-	                 
+
+
 	             }
 	        }
-	         
+
 	    }
 
-	
-	
-	
+
+
+
 	@Override
 	protected void onDestroy() {
-		
+
 		super.onDestroy();
 	}
 

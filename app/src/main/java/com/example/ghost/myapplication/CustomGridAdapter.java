@@ -8,22 +8,19 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 
-public class CustomGridAdapter extends BaseAdapter {
-	
-	private Context context; 
-	//private final String[] gridValues;
+public class CustomGridAdapter extends BaseAdapter{
+	private Context context;
+
     private Controller aController;
-	
-	//Constructor to initialize values
 	public CustomGridAdapter(Context context, Controller aController) {
-		this.context = context;
+this.context = context;
 		this.aController = aController;
 	}
 	
 	@Override
 	public int getCount() {
 		
-		// Number of times getView method call depends upon gridValues.length
+
 		return aController.getUserDataSize();
 	}
 
@@ -40,12 +37,10 @@ public class CustomGridAdapter extends BaseAdapter {
 	}
 	
 	
-    // Number of times getView method call depends upon gridValues.length
-	
+
 	public View getView(int position, View convertView, ViewGroup parent) {
 
-		//LayoutInflator to call external grid_item.xml file
-		
+
 		LayoutInflater inflater = (LayoutInflater) context
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
@@ -55,12 +50,11 @@ public class CustomGridAdapter extends BaseAdapter {
 
 			gridView = new View(context);
 
-			// get layout from grid_item.xml
 			gridView = inflater.inflate(R.layout.grid_item, null);
 
 			UserData userdataObj = aController.getUserData(position);
 			
-			// set value into textview
+
 			
 			TextView textView = (TextView) gridView
 					.findViewById(R.id.grid_item_label);

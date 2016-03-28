@@ -1,5 +1,6 @@
 package com.example.ghost.myapplication;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,12 +15,11 @@ import android.widget.Toast;
 
 import com.google.android.gcm.GCMRegistrar;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     TextView lblMessage;
     Controller aController;
 
-    // Asyntask
     AsyncTask<Void, Void, Void> mRegisterTask;
 
     public static String name;
@@ -31,85 +31,60 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Get Global Controller Class object
-        // (see application tag in AndroidManifest.xml)
         aController = (Controller) getApplicationContext();
 
-
-        // Check if Internet present
         if (!aController.isConnectingToInternet()) {
 
-            // Internet Connection is not present
             aController.showAlertDialog(MainActivity.this,
                     "Internet Connection Error",
                     "Please connect to Internet connection", false);
-            // stop executing code by return
             return;
         }
 
         String deviceIMEI = "";
         if(Config.SECOND_SIMULATOR){
 
-            //Make it true in CONFIG if you want to open second simutor
-            // for testing actually we are using IMEI number to save a unique device
-
             deviceIMEI = "000000000000001";
         }
         else
         {
-            // GET IMEI NUMBER
+
             TelephonyManager tManager = (TelephonyManager) getBaseContext()
                     .getSystemService(Context.TELEPHONY_SERVICE);
             deviceIMEI = tManager.getDeviceId();
         }
 
-        // Getting name, email from intent
         Intent i = getIntent();
 
         name = i.getStringExtra("name");
         email = i.getStringExtra("email");
         imei  = deviceIMEI;
-        // Make sure the device has the proper dependencies.
         GCMRegistrar.checkDevice(this);
-
-        // Make sure the manifest permissions was properly set
         GCMRegistrar.checkManifest(this);
 
         lblMessage = (TextView) findViewById(R.id.lblMessage);
-
-        // Register custom Broadcast receiver to show messages on activity
         registerReceiver(mHandleMessageReceiver, new IntentFilter(
                 Config.DISPLAY_REGISTRATION_MESSAGE_ACTION));
 
-        // Get GCM registration id
         final String regId = GCMRegistrar.getRegistrationId(this);
 
-        // Check if regid already presents
         if (regId.equals("")) {
             Log.i("GCM K", "--- Regid = ''"+regId);
-            // Register with GCM
             GCMRegistrar.register(this, Config.GOOGLE_SENDER_ID);
 
         } else {
 
-            // Device is already registered on GCM Server
             if (GCMRegistrar.isRegisteredOnServer(this)) {
                 final Context context = this;
-                // Skips registration.
                 Toast.makeText(getApplicationContext(),
                         "Already registered with GCM Server",
                         Toast.LENGTH_LONG).show();
                 Log.i("GCM K", "Already registered with GCM Server");
 
-                //GCMRegistrar.unregister(context);
-
             } else {
 
                 Log.i("GCM K", "-- gO for registration--");
 
-                // Try to register again, but not in the UI thread.
-                // It's also necessary to cancel the thread onDestroy(),
-                // hence the use of AsyncTask instead of a raw thread.
                 final Context context = this;
 
                 mRegisterTask = new AsyncTask<Void, Void, Void>() {
@@ -117,8 +92,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     protected Void doInBackground(Void... params) {
 
-                        // Register on our server
-                        // On server creates a new user
                         aController.register(context, name, email, regId,imei);
 
                         return null;
@@ -133,13 +106,11 @@ public class MainActivity extends AppCompatActivity {
 
                 };
 
-                // execute AsyncTask
                 mRegisterTask.execute(null, null, null);
             }
         }
     }
 
-    // Create a broadcast receiver to get message and show on screen
     private final BroadcastReceiver mHandleMessageReceiver = new BroadcastReceiver() {
 
         @Override
@@ -147,32 +118,26 @@ public class MainActivity extends AppCompatActivity {
 
             String newMessage = intent.getExtras().getString(Config.EXTRA_MESSAGE);
 
-            // Waking up mobile if it is sleeping
             aController.acquireWakeLock(getApplicationContext());
 
-            // Display message on the screen
             lblMessage.append(newMessage + " ");
 
                     Toast.makeText(getApplicationContext(),
                             "Got Message: " + newMessage,
                             Toast.LENGTH_LONG).show();
 
-            // Releasing wake lock
             aController.releaseWakeLock();
         }
     };
 
     @Override
     protected void onDestroy() {
-        // Cancel AsyncTask
         if (mRegisterTask != null) {
             mRegisterTask.cancel(true);
         }
         try {
-            // Unregister Broadcast Receiver
             unregisterReceiver(mHandleMessageReceiver);
 
-            //Clear internal resources.
             GCMRegistrar.onDestroy(this);
 
         } catch (Exception e) {
